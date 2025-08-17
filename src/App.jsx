@@ -16,7 +16,7 @@ const CONFIG = {
       title: "One Ting",
       url: "https://oneting.netlify.app/",
       tagline: "A simple one-thing focus tool.",
-      tags: ["Web", "Minimal"],
+      tags: ["React", "Productivity"],
       preview: "",
     },
     {
