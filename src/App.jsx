@@ -3,19 +3,28 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Moon, Sun, ExternalLink } from "lucide-react";
 
 /**
- * Projects — Clean Tiles + Hover Preview + Easter‑egg theme + Perf polish
+ * Homepage — Clean tiles, dark/light mode, smooth motion
+ * This is JSX (no TypeScript). Includes "One Ting" at the top.
  */
 
 const CONFIG = {
   github: "https://github.com/248kt",
   username: "248kt",
   projects: [
+    // New project
+    {
+      title: "One Ting",
+      url: "https://oneting.netlify.app/",
+      tagline: "A simple one-thing focus tool.",
+      tags: ["Web", "Minimal"],
+      preview: "",
+    },
     {
       title: "StudyDot",
       url: "https://studydot.netlify.app/",
       tagline: "Minimal study app for focus: timer + tasks.",
       tags: ["React", "UI", "Productivity"],
-      preview: "", // add an image URL if iframe is blocked
+      preview: "",
     },
     {
       title: "Wishlist Mini",
@@ -35,114 +44,153 @@ const CONFIG = {
 };
 
 const palettes = {
-  light: { bg: "#ffffff", text: "#111827" },
-  dark:  { bg: "#09090b", text: "#e4e4e7" },
-  solar: { bg: "#fdf6e3", text: "#073642" },
+  light: { bg: "#fafafa", text: "#0b0b0b" },
+  dark: { bg: "#0a0a0a", text: "#e5e5e5" },
 };
 
-const Tile = memo(function Tile({ p, i }) {
-  const reduce = useReducedMotion();
-  const [hover, setHover] = useState(false);
+function useStoredTheme() {
+  const prefersDark =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(prefers-color-scheme: dark)").matches;
 
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === "undefined") return prefersDark ? "dark" : "light";
+    const saved = localStorage.getItem("theme");
+    if (saved === "light" || saved === "dark") return saved;
+    return prefersDark ? "dark" : "light";
+  });
+
+  const set = useCallback((t) => {
+    setTheme(t);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("theme", t);
+    }
+  }, []);
+
+  return [theme, set];
+}
+
+const ProjectCard = memo(function ProjectCard({ project }) {
+  const reduce = !!useReducedMotion();
   return (
-    <div className="relative">
-      <motion.article
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 22, delay: 0.05 * i }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
-        className="group h-full min-h-[168px] flex flex-col rounded-2xl border border-zinc-300 dark:border-zinc-800 bg-white/90 dark:bg-zinc-900/60 backdrop-blur p-4 sm:p-5 hover:-translate-y-[2px] hover:shadow-md transition"
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h3 className="text-base sm:text-lg font-semibold leading-tight tracking-tight text-zinc-900 dark:text-zinc-100">
-            {p.title}
-          </h3>
-          <a
-            href={p.url}
-            target="_blank"
-            rel="noreferrer noopener"
-            className="inline-flex items-center gap-1 text-sm underline-offset-4 text-zinc-700 dark:text-zinc-300 hover:underline"
-          >
-            Visit <ExternalLink className="w-3.5 h-3.5" />
-          </a>
-        </div>
-        <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-300">{p.tagline}</p>
-        <div className="mt-auto pt-3 flex flex-wrap gap-2">
-          {p.tags?.map((t) => (
-            <span key={t} className="text-xs px-2 py-1 rounded-full border border-zinc-300 dark:border-zinc-800 bg-zinc-100 hover:bg-zinc-200/70 dark:bg-zinc-950/30 dark:hover:bg-zinc-900/50 transition-colors text-zinc-700 dark:text-zinc-300">
-              {t}
-            </span>
-          ))}
-        </div>
-      </motion.article>
-
-      
+    <motion.a
+      href={project.url}
+      target="_blank"
+      rel="noreferrer noopener"
+      initial={{ opacity: 0, y: 8 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.2 }}
+      transition={{ duration: reduce ? 0.15 : 0.28 }}
+      className="group h-full rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white/70 dark:bg-zinc-900/60 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow flex flex-col p-5"
+    >
+      <div className="flex items-start justify-between gap-4">
+        <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+          {project.title}
+        </h3>
+        <ExternalLink className="size-4 text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-400 dark:group-hover:text-zinc-200 transition-colors" />
       </div>
+
+      <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+        {project.tagline}
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {project.tags.map((t) => (
+          <span
+            key={t}
+            className="text-[11px] leading-none px-2 py-1 rounded-full border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-300"
+          >
+            {t}
+          </span>
+        ))}
+      </div>
+
+      {/* spacer keeps heights equal by pushing content up */}
+      <div className="mt-auto" />
+    </motion.a>
   );
 });
 
 export default function App() {
-  const year = useMemo(() => new Date().getFullYear(), []);
-  const reduce = useReducedMotion();
-  const [theme, setTheme] = useState("dark"); // 'light' | 'dark' | 'solar'
+  const [theme, setTheme] = useStoredTheme();
+  const reduce = !!useReducedMotion();
 
-  const toggleTheme = useCallback((e) => {
-    if (e?.shiftKey) {
-      setTheme((t) => (t === "solar" ? "light" : "solar"));
-      return;
-    }
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
-  }, []);
+  const palette = useMemo(() => palettes[theme], [theme]);
+  const year = new Date().getFullYear();
 
-  const palette = palettes[theme];
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  }, [theme, setTheme]);
 
   return (
     <div className={theme === "dark" ? "dark" : undefined} data-theme={theme}>
       <motion.main
         initial={false}
         animate={{ backgroundColor: palette.bg, color: palette.text }}
-        transition={{ duration: reduce ? 0.2 : 0.35 }}
+        transition={{ duration: reduce ? 0.15 : 0.3 }}
         className="min-h-dvh"
       >
         <div className="max-w-5xl mx-auto px-5 py-10">
+          {/* Top bar: username (left) + theme toggle (right) */}
           <div className="flex items-center justify-between">
-  <a
-    href={CONFIG.github}
-    target="_blank"
-    rel="noreferrer noopener"
-    className="text-sm text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 underline-offset-4 hover:underline"
-  >
-    {CONFIG.username || '248kt'}
-  </a>
-  <button
-    onClick={toggleTheme}
-    className="rounded-2xl border border-zinc-300 dark:border-zinc-800 px-3 py-2 hover:shadow-sm active:scale-[0.98] transition bg-white/90 dark:bg-zinc-900/60 backdrop-blur"
-    aria-label="Toggle theme (Shift for Solarized)"
-    title="Toggle light/dark — hold Shift for Solarized"
-  >
-    <motion.span
-      key={theme}
-      initial={{ rotate: -90, opacity: 0 }}
-      animate={{ rotate: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      className="inline-flex"
-    >
-      {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-    </motion.span>
-  </button>
-</div>
+            <a
+              href={CONFIG.github}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="text-sm text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100"
+            >
+              {CONFIG.username}
+            </a>
 
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle theme"
+              className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 px-3 py-1.5 text-sm
+                         hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              {theme === "dark" ? (
+                <>
+                  <Sun className="size-4" />
+                  Light
+                </>
+              ) : (
+                <>
+                  <Moon className="size-4" />
+                  Dark
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Header */}
+          <header className="mt-8">
+            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              Projects
+            </h1>
+            <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+              Clean tiles with quick tags. Click to open.
+            </p>
+          </header>
+
+          {/* Grid of tiles — equal heights across rows */}
           <section className="mt-6">
-            <h1 className="text-xl font-semibold tracking-tight mb-4">Projects</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 items-stretch gap-5 sm:gap-6">
-              {CONFIG.projects.map((p, i) => (
-                <Tile p={p} i={i} key={p.title} />
+            <div
+              className="
+                grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4
+                [grid-auto-rows:1fr]
+              "
+            >
+              {CONFIG.projects.map((p) => (
+                <div key={p.title} className="min-h-[180px]">
+                  <ProjectCard project={p} />
+                </div>
               ))}
             </div>
           </section>
 
-          <footer className="mt-16 text-center">
+          {/* Footer */}
+          <footer className="mt-12 border-t border-zinc-200 dark:border-zinc-800 pt-6">
             <a
               href={CONFIG.github}
               target="_blank"
